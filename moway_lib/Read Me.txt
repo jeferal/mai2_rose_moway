@@ -1,0 +1,2 @@
+Copy .h & .lib files to the source code folder
+copy .dll files to debug and/or release folders where exe application is linked

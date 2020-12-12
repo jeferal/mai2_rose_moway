@@ -1,0 +1,2 @@
+Copia ficheros .h y .lib donde estén los fuentes del proyecto
+copia ficheros .dll en el debug y/o release donde se genere el ejecutable

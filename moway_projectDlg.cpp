@@ -9,9 +9,9 @@
 #include "afxdialogex.h"
 #include "stdlib.h"
 
-#include "../../includes/CMoway.h"
-#include "../../includes/usb.h"
-#include "../../includes/RFModule.h"
+#include "moway_lib/CMoway.h"
+#include "moway_lib/RFModule.h"
+#include "moway_lib/usb.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
