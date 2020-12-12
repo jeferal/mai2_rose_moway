@@ -7,7 +7,7 @@
 #define ID_MOWAY 18
 #define FRONTANGMAX 215
 #define FRONTANGMIN 135
-#define LATANGMAX 50
+#define LATANGMAX 60
 #define LATANGMIN 30
 
 #define TIMER_1 1
@@ -59,6 +59,7 @@ public:
 		int lS, clS, crS, rS;
 		int battery;
 		moway_routine my_routine;
+		int angulo;
 	} mymoway_state;
 
 	void wall_follower_routine(CmowayprojectDlg *projectData, moway_state *mymoway_state);
@@ -71,4 +72,5 @@ public:
 	CProgressCtrl ProxRsBar;
 	CString edit_show_routine;
 	CProgressCtrl battery_bar;
+	int debug_control;
 };

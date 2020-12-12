@@ -60,6 +60,7 @@ END_MESSAGE_MAP()
 CmowayprojectDlg::CmowayprojectDlg(CWnd* pParent /*= nullptr*/)
 	: CDialogEx(IDD_MOWAY_PROJECT_DIALOG, pParent)
 	, edit_show_routine(_T(""))
+	, debug_control(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -202,8 +203,10 @@ void CmowayprojectDlg::OnBnClickedButtonConnect()
 		AfxMessageBox((CString)"Moway conectado, timers encendidos");
 		is_connected = true;
 		edit_show_routine = "Listo para rutina";
+		Sleep(300);
 		if (!mymoway.ReadBatteryStatus(&mymoway_state.battery))
 			AfxMessageBox((CString)"Error leyendo el estado de la batería");
+		Sleep(300);
 		UpdateData(FALSE);
 	}
 	else {
@@ -255,14 +258,6 @@ UINT CmowayprojectDlg::RoutineThread( LPVOID pParam )
 			projectData->spiral_routine(projectData, mymoway_state);
 			break;
 		default:
-			AfxMessageBox((CString)"Rutina de limpieza completada");
-			if (!mymoway.ReadBatteryStatus(&mymoway_state->battery))
-				AfxMessageBox((CString)"Error leyendo el estado de la batería");
-			projectData->routine = false;
-			projectData->edit_show_routine = "Listo para rutina";
-			mymoway.MotorStop();
-			AfxEndThread(1);
-			return 0;
 			break;
 		}
 	}
@@ -304,19 +299,14 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 		Sleep(100);
 
 		if (mymoway_state->lS > umbral && mymoway_state->clS > umbral) { S = corner_izq; S_prev = go_forward; break; }
-		else if (mymoway_state->crS > umbral && mymoway_state->clS > umbral || mymoway_state->rS > umbral && mymoway_state->lS > umbral || mymoway_state->crS > umbral_high || mymoway_state->clS > umbral_high)
-		{	
-				S = corner_izq; 
-				S_prev = go_forward; 
-				break; 
-		}
+		else if (mymoway_state->crS > umbral_high || mymoway_state->clS > umbral_high){	S = corner_izq; S_prev = go_forward; break; }
 		else if (mymoway_state->lS < umbral_low && S_prev == wall_izq) { S = wall_izq_correction; S_prev = go_forward; break; }
 		else if (mymoway_state->lS > umbral) { S = wall_izq; S_prev = go_forward; break; }
 		else { S = go_forward; S_prev = go_forward; break; }
 
 		case wall_izq:
 			//Girar muy poco a la derecha
-			mymoway.MotorStop();
+			//mymoway.MotorStop();
 			Sleep(100);
 			mymoway.SetSpeed(10, 0, CMoway::FORWARD, CMoway::BACKWARD, 0, 0);
 			Sleep(300);
@@ -326,7 +316,7 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 
 		case wall_izq_correction:
 			//Girar muy poco a la izquierda
-			mymoway.MotorStop();
+			//mymoway.MotorStop();
 			Sleep(100);
 			mymoway.SetSpeed(0, 10, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
 			Sleep(200);
@@ -337,7 +327,7 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 
 		case corner_izq:
 			//Girar 90 grados
-			mymoway.MotorStop();
+			//mymoway.MotorStop();
 			Sleep(100);
 			mymoway.SetSpeed(10, 10, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
 			Sleep(500);
@@ -356,7 +346,7 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 
 void CmowayprojectDlg::random_routine(CmowayprojectDlg * projectData, moway_state * mymoway_state)
 {
-	//###	COMPORTAMIENTO ALEATORIO	###//
+	//###	COMPORTAMIENTO EVITAR OBSTÁCULOS	###//
 
 	//Variables para la máquina de estados
 	enum State { no_obs, obs_der, obs_izq, obs_front };
@@ -373,52 +363,58 @@ void CmowayprojectDlg::random_routine(CmowayprojectDlg * projectData, moway_stat
 
 
 	switch (S) {
-		case no_obs:
-			//Aplicar salidas
-			mymoway.GoStraight(50);
-			Sleep(100);
+	case no_obs:
+		//Aplicar salidas
+		mymoway.GoStraight(50);
+		Sleep(100);
 
-			//Comprobar sensores
-			if (!mymoway.ReadProximitySensors(&mymoway_state->lS, &mymoway_state->clS, &mymoway_state->crS, &mymoway_state->rS))
-				AfxMessageBox((CString)"Error leyendo los sensores de proximidad");
-			Sleep(100);
+		//Comprobar sensores
+		if (!mymoway.ReadProximitySensors(&mymoway_state->lS, &mymoway_state->clS, &mymoway_state->crS, &mymoway_state->rS))
+			AfxMessageBox((CString)"Error leyendo los sensores de proximidad");
+		Sleep(100);
 
-			if (mymoway_state->clS > umbral) { S = obs_front; break; }
-			else if (mymoway_state->lS > umbral) { S = obs_izq; break; }
-			else if (mymoway_state->rS > umbral) { S = obs_der; break; }
-			else if (mymoway_state->crS > umbral) { S = obs_front; break; }
-			else { S = no_obs; break; }
-		case obs_der:
-			//Aplicar salidas
-			mymoway.MotorStop();
-			Sleep(100);
-			mymoway.SetSpeed(100, 10, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
-			angulo = rand() % (LATANGMIN - LATANGMAX + 1) + LATANGMAX;
-			time_spin = int(500 / 30)*angulo;
-			Sleep(time_spin);
-			S = no_obs;
-			break;
+		if (mymoway_state->clS > umbral) { S = obs_front; break; }
+		else if (mymoway_state->lS > umbral) { S = obs_izq; break; }
+		else if (mymoway_state->rS > umbral) { S = obs_der; break; }
+		else if (mymoway_state->crS > umbral) { S = obs_front; break; }
+		else { S = no_obs; break; }
+	case obs_der:
+		//Aplicar salidas
+		mymoway.MotorStop();
+		Sleep(100);
+		mymoway.SetSpeed(100, 10, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
+		angulo = rand() % (LATANGMAX - LATANGMIN + 1) + LATANGMIN;
+		time_spin = int(500 / 30)*angulo;
+		Sleep(time_spin);
+		S = no_obs;
+		break;
 
-		case obs_izq:
-			//Aplicar salidas
-			mymoway.MotorStop();
-			Sleep(100);
-			mymoway.SetSpeed(10, 100, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
-			angulo = rand() % (LATANGMIN - LATANGMAX + 1) + LATANGMAX;
-			time_spin = int(500 / 30)*angulo;
-			Sleep(time_spin);
-			S = no_obs;
-			break;
+	case obs_izq:
+		//Aplicar salidas
+		mymoway.MotorStop();
+		Sleep(100);
+		mymoway.SetSpeed(10, 100, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
+		angulo = rand() % (LATANGMAX - LATANGMIN + 1) + LATANGMIN;
+		time_spin = int(500 / 30)*angulo;
+		Sleep(time_spin);
+		S = no_obs;
+		break;
 
-		case obs_front:
-			//Generar ángulo aleatorio
-			angulo = rand() % (FRONTANGMIN - FRONTANGMAX + 1) + FRONTANGMAX;
-			time_spin = int(200 / 90)*angulo;
-			mymoway.SetSpeed(60, 60, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
-			Sleep(time_spin);
-			S = no_obs;
-			break;
-		}
+	case obs_front:
+		//Generar ángulo aleatorio
+		mymoway.MotorStop();
+		Sleep(100);
+		mymoway.SetSpeed(10, 10, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
+		Sleep(400);
+		angulo = rand() % (FRONTANGMAX - FRONTANGMIN + 1) + FRONTANGMIN;
+		time_spin = int(5.3751)*angulo - 550;
+		mymoway_state->angulo = angulo;
+		mymoway.SetSpeed(60, 60, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
+		Sleep(time_spin);
+		Sleep(350);
+		S = no_obs;
+		break;
+	}
 }
 
 void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_state * mymoway_state)
@@ -444,20 +440,21 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 		case no_obs:
 			//Aplicar salidas
 			
-			if (iter < 50)
+			if (iter < 10)
 			{
-				if (iter % 12 == 0)
-					mymoway.GoStraight(100);
-				else
-					mymoway.SetSpeed(2, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
+				mymoway.SetSpeed(2, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
+			}
+			else if (iter < 15)
+			{
+				mymoway.SetSpeed(30, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
 			}
 			else
 			{
-				mymoway.SetSpeed(30, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
-			}			
+				mymoway.SetSpeed(50, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
+			}
 			
 
-			if (iter > 100)
+			if (iter > 20)
 				iter = 0;
 			else
 				iter++;
@@ -510,8 +507,6 @@ void CmowayprojectDlg::OnBnClickedButtonRoutine()
 		routine = false;
 		b_routine.SetWindowTextW(CString("Comenzar rutina"));
 		edit_show_routine = "Listo para rutina";
-		if (!mymoway.ReadBatteryStatus(&mymoway_state.battery))
-			AfxMessageBox((CString)"Error leyendo el estado de la batería");
 
 		KillTimer(TIMER_1);
 
@@ -533,8 +528,6 @@ void CmowayprojectDlg::OnBnClickedButtonRoutine()
 		//Set timer para visualizar estado de los sensores
 		SetTimer(TIMER_1, SAMPLE_TIME_1, NULL);
 		b_routine.SetWindowTextW(CString("Parar rutina"));
-		if (!mymoway.ReadBatteryStatus(&mymoway_state.battery))
-			AfxMessageBox((CString)"Error leyendo el estado de la batería");
 
 		//Comenzar con rutina random
 		mymoway_state.my_routine = random;
@@ -553,6 +546,7 @@ void CmowayprojectDlg::OnTimer(UINT_PTR nIDEvent)
 		ProxCrsBar.SetPos(mymoway_state.crS);
 		ProxRsBar.SetPos(mymoway_state.rS);
 		battery_bar.SetPos(mymoway_state.battery);
+		debug_control = mymoway_state.angulo;
 		
 		if (!is_connected)
 			edit_show_routine = "Disconnected";
@@ -577,10 +571,10 @@ void CmowayprojectDlg::OnTimer(UINT_PTR nIDEvent)
 			mymoway_state.my_routine = random;
 		else if (time_routine >= 4 * 60 && time_routine <= 4 * 120)
 			mymoway_state.my_routine = wall_follower;
-		else if (time_routine > 4 * 120 && time_routine <= 4*180)
+		else if (time_routine > 4 * 120 && time_routine <= 4 * 180)
 			mymoway_state.my_routine = spiral;
 		else
-			mymoway_state.my_routine = finished;
+			time_routine = 0;
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
