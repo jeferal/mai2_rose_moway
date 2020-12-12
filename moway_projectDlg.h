@@ -54,12 +54,14 @@ public:
 	static UINT RoutineThread( LPVOID pParam);
 	enum moway_routine {random, wall_follower, spiral, finished};
 
+	//Estructura para guardar el estado del robot
 	struct moway_state {
 		//Sensores de proximidad
 		int lS, clS, crS, rS;
+		//Sensor de batería
 		int battery;
+		//Rutina actual
 		moway_routine my_routine;
-		int angulo;
 	} mymoway_state;
 
 	void wall_follower_routine(CmowayprojectDlg *projectData, moway_state *mymoway_state);

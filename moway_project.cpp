@@ -26,8 +26,6 @@ CmowayprojectApp::CmowayprojectApp()
 	// admite Administrador de reinicio
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
 
-	// TODO: agregar aquí el código de construcción,
-	// Colocar toda la inicialización importante en InitInstance
 }
 
 

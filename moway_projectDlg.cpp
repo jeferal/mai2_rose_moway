@@ -119,7 +119,7 @@ BOOL CmowayprojectDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Establecer icono grande
 	SetIcon(m_hIcon, FALSE);		// Establecer icono pequeño
 
-	// TODO: agregar aquí inicialización adicional
+	// Inicialización del hilo de ejecución y de los visualizadores
 	routine_thread = NULL;
 
 	ProxLsBar.SetRange(0, 100);
@@ -298,6 +298,7 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 			AfxMessageBox((CString)"Error leyendo los sensores de proximidad");
 		Sleep(100);
 
+		//Condiciones para las transiciones
 		if (mymoway_state->lS > umbral && mymoway_state->clS > umbral) { S = corner_izq; S_prev = go_forward; break; }
 		else if (mymoway_state->crS > umbral_high || mymoway_state->clS > umbral_high){	S = corner_izq; S_prev = go_forward; break; }
 		else if (mymoway_state->lS < umbral_low && S_prev == wall_izq) { S = wall_izq_correction; S_prev = go_forward; break; }
@@ -306,7 +307,6 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 
 		case wall_izq:
 			//Girar muy poco a la derecha
-			//mymoway.MotorStop();
 			Sleep(100);
 			mymoway.SetSpeed(10, 0, CMoway::FORWARD, CMoway::BACKWARD, 0, 0);
 			Sleep(300);
@@ -316,7 +316,6 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 
 		case wall_izq_correction:
 			//Girar muy poco a la izquierda
-			//mymoway.MotorStop();
 			Sleep(100);
 			mymoway.SetSpeed(0, 10, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
 			Sleep(200);
@@ -326,8 +325,7 @@ void CmowayprojectDlg::wall_follower_routine(CmowayprojectDlg * projectData, mow
 			break;
 
 		case corner_izq:
-			//Girar 90 grados
-			//mymoway.MotorStop();
+			//Hacia detrás y después girar hacia la derecha
 			Sleep(100);
 			mymoway.SetSpeed(10, 10, CMoway::BACKWARD, CMoway::BACKWARD, 0, 0);
 			Sleep(500);
@@ -378,6 +376,7 @@ void CmowayprojectDlg::random_routine(CmowayprojectDlg * projectData, moway_stat
 		else if (mymoway_state->rS > umbral) { S = obs_der; break; }
 		else if (mymoway_state->crS > umbral) { S = obs_front; break; }
 		else { S = no_obs; break; }
+
 	case obs_der:
 		//Aplicar salidas
 		mymoway.MotorStop();
@@ -408,7 +407,6 @@ void CmowayprojectDlg::random_routine(CmowayprojectDlg * projectData, moway_stat
 		Sleep(400);
 		angulo = rand() % (FRONTANGMAX - FRONTANGMIN + 1) + FRONTANGMIN;
 		time_spin = int(5.3751)*angulo - 550;
-		mymoway_state->angulo = angulo;
 		mymoway.SetSpeed(60, 60, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
 		Sleep(time_spin);
 		Sleep(350);
@@ -442,14 +440,17 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 			
 			if (iter < 10)
 			{
+				//Grado de apertura 1
 				mymoway.SetSpeed(2, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
 			}
 			else if (iter < 15)
 			{
+				//Grado de apertura 2
 				mymoway.SetSpeed(30, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
 			}
 			else
 			{
+				//Grado de apertura 3
 				mymoway.SetSpeed(50, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
 			}
 			
@@ -498,7 +499,6 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 void CmowayprojectDlg::OnBnClickedButtonRoutine()
 {
 
-	// TODO: Agregue aquí su código de controlador de notificación de control
 	if (!is_connected) {
 		AfxMessageBox((CString)"Moway no esta conectado");
 		return;
@@ -515,7 +515,6 @@ void CmowayprojectDlg::OnBnClickedButtonRoutine()
 		ProxCrsBar.SetPos(0);
 		ProxRsBar.SetPos(0);
 		UpdateData(FALSE);
-		//Desactivar todas las salidas del moway!!! #TODO
 	}
 	else
 	{
@@ -538,7 +537,6 @@ void CmowayprojectDlg::OnBnClickedButtonRoutine()
 
 void CmowayprojectDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	// TODO: Agregue aquí su código de controlador de mensajes o llame al valor predeterminado
 	if (nIDEvent == TIMER_1) {
 		UpdateData(TRUE);
 		ProxLsBar.SetPos(mymoway_state.lS);
@@ -546,7 +544,6 @@ void CmowayprojectDlg::OnTimer(UINT_PTR nIDEvent)
 		ProxCrsBar.SetPos(mymoway_state.crS);
 		ProxRsBar.SetPos(mymoway_state.rS);
 		battery_bar.SetPos(mymoway_state.battery);
-		debug_control = mymoway_state.angulo;
 		
 		if (!is_connected)
 			edit_show_routine = "Disconnected";
