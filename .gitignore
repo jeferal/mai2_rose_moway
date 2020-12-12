@@ -5,5 +5,6 @@ moway_lib/CMoway.dll
 moway_lib/CMoway.lib
 moway_lib/libusb.lib
 moway_lib/libusb0.lib
+moway_lib/libusb0.dll
 moway_lib/msvcp100d.dll
 moway_lib/msvcr100d.dll
