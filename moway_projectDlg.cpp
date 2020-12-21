@@ -371,9 +371,9 @@ void CmowayprojectDlg::random_routine(CmowayprojectDlg * projectData, moway_stat
 			AfxMessageBox((CString)"Error leyendo los sensores de proximidad");
 		Sleep(100);
 
-		if (mymoway_state->clS > umbral) { S = obs_front; break; }
-		else if (mymoway_state->lS > umbral) { S = obs_izq; break; }
+		if (mymoway_state->lS > umbral) { S = obs_izq; break; }
 		else if (mymoway_state->rS > umbral) { S = obs_der; break; }
+		else if (mymoway_state->clS > umbral) { S = obs_front; break; }
 		else if (mymoway_state->crS > umbral) { S = obs_front; break; }
 		else { S = no_obs; break; }
 
@@ -437,22 +437,18 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 	switch (S) {
 		case no_obs:
 			//Aplicar salidas
-			
-			if (iter < 10)
-			{
+			if (iter < 6)
 				//Grado de apertura 1
-				mymoway.SetSpeed(2, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
-			}
-			else if (iter < 15)
-			{
+				mymoway.SetSpeed(0, 100, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
+			else if (iter >= 6 && iter < 16)
 				//Grado de apertura 2
-				mymoway.SetSpeed(30, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
-			}
-			else
-			{
+				mymoway.SetSpeed(2, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
+			else if (iter >= 16 && iter < 21)
 				//Grado de apertura 3
+				mymoway.SetSpeed(30, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
+			else
+				//Grado de apertura 4
 				mymoway.SetSpeed(50, 100, CMoway::FORWARD, CMoway::FORWARD, 0, 0);
-			}
 			
 
 			if (iter > 20)
@@ -466,8 +462,8 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 			if (!mymoway.ReadProximitySensors(&mymoway_state->lS, &mymoway_state->clS, &mymoway_state->crS, &mymoway_state->rS))
 				AfxMessageBox((CString)"Error leyendo los sensores de proximidad");
 			Sleep(100);
-
-			if (mymoway_state->clS > umbral) { S = obs_front; break; }
+			if(mymoway_state->lS > umbral && mymoway_state->rS > umbral) { S = obs_front; break;}
+			else if (mymoway_state->clS > umbral) { S = obs_front; break; }
 			else if (mymoway_state->lS > umbral) { S = obs_izq; break; }
 			else if (mymoway_state->rS > umbral) { S = obs_der; break; }
 			else if (mymoway_state->crS > umbral) { S = obs_front; break; }
@@ -479,7 +475,7 @@ void CmowayprojectDlg::spiral_routine(CmowayprojectDlg * projectData, moway_stat
 			break;
 
 		case obs_izq:
-			mymoway.SetSpeed(100, 0, CMoway::BACKWARD, CMoway::FORWARD, 0, 0);
+			mymoway.SetSpeed(100, 0, CMoway::FORWARD, CMoway::BACKWARD, 0, 0);
 			Sleep(400);
 			S = no_obs;
 			break;
